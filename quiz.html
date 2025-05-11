@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz WMYP</title>
+  <!-- Import de la police Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Montserrat', sans-serif;
+      background: transparent;
+    }
+    /* Style général et boutons Montserrat */
+    #product-quiz { font-family: 'Montserrat', sans-serif; }
+    #product-quiz p { margin-bottom: .5em; }
+    #product-quiz label { display: block; margin: 4px 0; cursor: pointer; }
+    .nav-btn, .commander-btn {
+      font-family: 'Montserrat', sans-serif;
+      background: transparent;
+      color: #000;
+      border: 2px solid #FFF5CB;
+      padding: .5em 1em;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color .3s, color .3s;
+    }
+    .nav-btn[disabled] {
+      opacity: .5;
+      cursor: default;
+    }
+    .nav-btn .arrow, .commander-btn .arrow {
+      font-size: 1.2em;
+      margin: 0 0.3em;
+    }
+    .nav-btn:hover:not([disabled]), .commander-btn:hover {
+      background: #FFF5CB;
+      color: #000;
+    }
+    /* Espacements */
+    #product-quiz .quiz-step { margin-bottom: 1.5em; }
+    .commander-btn { margin-top: 1em; }
+    /* Fond transparent forcé sur le quiz et ses étapes */
+    #product-quiz, #product-quiz .quiz-step {
+      background: transparent !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="product-quiz" style="max-width:500px;margin:auto;font-family:'Montserrat',sans-serif;">
+    <!-- Étape 1 -->
+    <div class="quiz-step" data-step="1">
+      <p><strong>1. Vous cherchez un jeu pour combien de joueurs ?</strong></p>
+      <label><input type="radio" name="q1" value="A"> Entre 2 et 5</label><br>
+      <label><input type="radio" name="q1" value="B"> Entre 5 et 10</label><br>
+      <label><input type="radio" name="q1" value="C"> Entre 10 et 15</label><br>
+      <label><input type="radio" name="q1" value="D"> Plus de 15</label><br>
+      <button class="nav-btn next-btn" disabled>Suivant <span class="arrow">→</span></button>
+    </div>
+    <!-- Étape 2 -->
+    <div class="quiz-step" data-step="2" style="display:none;">
+      <p><strong>2. Quel type de jeu ?</strong></p>
+      <label><input type="radio" name="q2" value="E"> Enquête ou murder party</label><br>
+      <label><input type="radio" name="q2" value="F"> Escape Game</label><br>
+      <label><input type="radio" name="q2" value="G"> Jeu de rôle “imposteurs”</label><br>
+      <label><input type="radio" name="q2" value="H"> Compétition (quiz, blind test…)</label><br>
+      <label><input type="radio" name="q2" value="I"> Surprenez-moi !</label><br>
+      <button class="nav-btn prev-btn"><span class="arrow">←</span> Précédent</button>
+      <button class="nav-btn next-btn" disabled>Suivant <span class="arrow">→</span></button>
+    </div>
+    <!-- Étape 3 -->
+    <div class="quiz-step" data-step="3" style="display:none;">
+      <p><strong>3. Le jeu est-il organisé pour une occasion spéciale ?</strong></p>
+      <label><input type="radio" name="q3" value="NP"> Non</label><br>
+      <label><input type="radio" name="q3" value="P"> Oui, pour célébrer quelqu'un</label><br>
+      <label><input type="radio" name="q3" value="P+"> Oui, pour un événement (mariage, séminaire…)</label><br>
+      <button class="nav-btn prev-btn"><span class="arrow">←</span> Précédent</button>
+      <button class="nav-btn next-btn" disabled>Voir le résultat <span class="arrow">→</span></button>
+    </div>
+    <!-- Résultat -->
+    <div id="quiz-result" class="quiz-step" data-step="4" style="display:none; text-align:center;"></div>
+  </div>
+  <script>
+    (function(){
+      const steps = Array.from(document.querySelectorAll('.quiz-step'));
+      let answers = {};
+      function showStep(n){
+        steps.forEach(s=> s.style.display = s.dataset.step==n?'block':'none');
+      }
+      steps.forEach(step=>{
+        const radios = step.querySelectorAll('input[type=radio]');
+        const next = step.querySelector('.next-btn');
+        const prev = step.querySelector('.prev-btn');
+        if(radios.length && next){
+          radios.forEach(r=> r.addEventListener('change', ()=> next.disabled = false));
+        }
+        if(prev){
+          prev.addEventListener('click', ()=> showStep(String(+step.dataset.step-1)));
+        }
+        if(next){
+          next.addEventListener('click', ()=>{
+            const name = radios[0].name;
+            const sel = step.querySelector('input[name="'+name+'"]:checked');
+            answers[name] = sel.value;
+            if(name==='q3' && sel.value==='P+'){
+              document.getElementById('quiz-result').innerHTML =
+                `<p>Pour un événement, merci de <a href="/demande-de-devis">demander un devis</a>.</p>`;
+              return showStep('4');
+            }
+            const nextStep = String(+step.dataset.step+1);
+            showStep(nextStep);
+            if(nextStep==='4') renderResult();
+          });
+        }
+      });
+      function renderResult(){
+        const { q1, q2, q3 } = answers;
+        const isAB = ['A','B'].includes(q1);
+        const isCD = ['C','D'].includes(q1);
+        const label = base => q3==='P' ? `${base} personnalisé` : base;
+        let prod = '';
+        if(isAB){
+          if(q2==='E') prod = label('Tribunal');
+          if(q2==='F'||q2==='I') prod = label('Lendemain de soirée');
+          if(q2==='G') prod = label('Les envahisseurs');
+          if(q2==='H') prod = label('Comme à la télé');
+        }
+        if(isCD){
+          if(q2==='E') prod = label('Le village');
+          if(q2==='F') prod = label('Lendemain de soirée');
+          if(q2==='G') prod = label('Enarques et arnaques');
+          if(q2==='H') prod = label('La fièvre');
+          if(q2==='I') prod = label('Le tribunal');
+        }
+        const html = prod
+          ? `<h3>🎲 Nous vous recommandons : <em>${prod}</em></h3>
+             <a href="/produit/${prod.toLowerCase().replace(/ /g,'-')}"
+                class="commander-btn">Commander</a>`
+          : `<p style="color:red;">Impossible de déterminer votre produit.</p>`;
+        document.getElementById('quiz-result').innerHTML = html;
+      }
+      showStep('1');
+    })();
+  </script>
+</body>
+</html>
